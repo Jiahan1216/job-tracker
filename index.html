@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>2026 Job Mission | Pro Tracker</title>
+    <title>2026 Job Mission | Pro Elite V8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
@@ -12,10 +12,8 @@
         .job-card { background: white; border-radius: 18px; border: 1px solid #e5eaf0; transition: all 0.2s ease; }
         .job-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(99, 102, 241, 0.08); border-color: #6366f1; }
         .countdown-tag { background: #f1f5f9; color: #475569; padding: 6px 16px; border-radius: 12px; font-weight: 800; border: 1px solid #e2e8f0; }
-        /* 日历方块增强 */
         .heat-box { width: 100%; height: 55px; border-radius: 12px; transition: all 0.3s; display: flex; align-items: center; justify-content: center; position: relative; }
-        .heat-box:hover { transform: scale(1.05); z-index: 10; }
-        .tooltip { opacity: 0; pointer-events: none; position: absolute; bottom: 115%; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 6px 12px; border-radius: 8px; font-size: 11px; white-space: nowrap; transition: 0.2s; }
+        .tooltip { opacity: 0; pointer-events: none; position: absolute; bottom: 115%; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 6px 12px; border-radius: 8px; font-size: 11px; white-space: nowrap; transition: 0.2s; z-index: 50;}
         .heat-box:hover .tooltip { opacity: 1; }
     </style>
 </head>
@@ -24,13 +22,18 @@
         <div class="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
             <div class="space-y-3">
                 <h1 class="text-4xl font-black tracking-tighter text-slate-900">🚀 2026 Job Mission</h1>
-                <div class="flex items-center gap-4">
+                <div class="flex flex-wrap items-center gap-4">
                     <div class="flex items-center gap-2 text-slate-500 font-bold text-xs uppercase tracking-widest">
                         <span>Target Start:</span>
                         <input type="date" v-model="targetDate" class="bg-white border border-slate-200 rounded-lg px-2 py-1 focus:ring-2 ring-indigo-100 outline-none font-black text-indigo-600 cursor-pointer">
                     </div>
                     <div class="countdown-tag text-sm">
                         距离入职还有 <span class="text-indigo-600 mx-1">{{ daysLeft }}</span> 天
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="exportData" class="text-[10px] font-black border border-slate-200 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 transition uppercase tracking-tighter">💾 导出备份</button>
+                        <button @click="triggerImport" class="text-[10px] font-black border border-slate-200 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 transition uppercase tracking-tighter">📥 导入同步</button>
+                        <input type="file" ref="fileInput" @change="importData" class="hidden">
                     </div>
                 </div>
             </div>
@@ -75,7 +78,7 @@
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Location</label>
-                    <input v-model="form.location" placeholder="Seattle / CA" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
+                    <input v-model="form.location" placeholder="Seattle" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Salary</label>
@@ -108,10 +111,6 @@
                     </div>
                 </div>
             </div>
-            <div class="mt-12 p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
-                <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2">求职格言</p>
-                <p class="text-indigo-900 font-medium italic">"Every application is a step closer to the dream offer. Stay consistent."</p>
-            </div>
         </div>
 
         <div v-show="view === 'kanban'" class="flex gap-6 overflow-x-auto pb-10">
@@ -141,61 +140,32 @@
                     <h2 class="text-2xl font-black text-slate-800 tracking-tight">修改投递详情</h2>
                     <button @click="editingJob = null" class="text-slate-300 hover:text-slate-600 text-3xl transition">&times;</button>
                 </div>
-                
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[10px] font-black text-slate-400 uppercase">公司</label>
-                            <input v-model="editingJob.company" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[10px] font-black text-slate-400 uppercase">岗位</label>
-                            <input v-model="editingJob.role" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
-                        </div>
+                        <input v-model="editingJob.company" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" placeholder="公司">
+                        <input v-model="editingJob.role" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" placeholder="岗位">
                     </div>
-                    
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] font-black text-slate-400 uppercase">当前阶段</label>
-                        <select v-model="editingJob.status" class="w-full bg-indigo-50 p-4 rounded-xl text-indigo-700 font-black border-none outline-none appearance-none">
-                            <option value="applied">Applied (已投递)</option>
-                            <option value="interview">Interviewing (面试中)</option>
-                            <option value="rejected">Rejected (拒信/挂了)</option>
-                            <option value="offer">Offer (成功拿到！)</option>
-                        </select>
-                    </div>
-
+                    <select v-model="editingJob.status" class="w-full bg-indigo-50 p-4 rounded-xl text-indigo-700 font-black border-none outline-none">
+                        <option value="applied">Applied</option>
+                        <option value="interview">Interviewing</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="offer">Offer Secured</option>
+                    </select>
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[10px] font-black text-slate-400 uppercase">Location</label>
-                            <input v-model="editingJob.location" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[10px] font-black text-slate-400 uppercase">Salary</label>
-                            <input v-model="editingJob.salary" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
-                        </div>
+                        <input v-model="editingJob.location" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" placeholder="地点">
+                        <input v-model="editingJob.salary" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" placeholder="薪资">
                     </div>
-
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[10px] font-black text-slate-400 uppercase">投递日期</label>
-                            <input v-model="editingJob.date" type="date" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
-                        </div>
-                        <div class="flex items-end pb-3 pl-2">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" v-model="editingJob.referral" class="w-4 h-4 rounded text-indigo-600">
-                                <span class="text-xs font-bold text-slate-600">这是内推岗位</span>
-                            </label>
-                        </div>
+                        <input v-model="editingJob.date" type="date" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
+                        <label class="flex items-center gap-2 cursor-pointer ml-2">
+                            <input type="checkbox" v-model="editingJob.referral">
+                            <span class="text-xs font-bold text-slate-600">内推</span>
+                        </label>
                     </div>
-
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] font-black text-slate-400 uppercase">JD 链接</label>
-                        <input v-model="editingJob.jd" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
-                    </div>
-
+                    <input v-model="editingJob.jd" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" placeholder="JD 链接">
                     <div class="flex gap-4 pt-6">
-                        <button @click="saveEdit" class="flex-1 bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all active:scale-95">保存更改</button>
-                        <button @click="deleteJob" class="bg-rose-50 text-rose-500 px-6 rounded-2xl font-bold hover:bg-rose-100 transition-colors">删除</button>
+                        <button @click="saveEdit" class="flex-1 bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">保存</button>
+                        <button @click="deleteJob" class="bg-rose-50 text-rose-500 px-6 rounded-2xl font-bold">删除</button>
                     </div>
                 </div>
             </div>
@@ -210,10 +180,9 @@
                 const searchQuery = ref('');
                 const searchOpen = ref(false);
                 const editingJob = ref(null);
-                const targetDate = ref(localStorage.getItem('target_date_v7') || '2026-07-20');
-                
-                const form = ref({ company: '', role: '', jd: '', location: '', salary: '', date: new Date().toISOString().split('T')[0], referral: false });
-                const jobs = ref(JSON.parse(localStorage.getItem('job_v7_data') || '[]'));
+                const targetDate = ref(localStorage.getItem('target_date_v8') || '2026-07-20');
+                const jobs = ref(JSON.parse(localStorage.getItem('job_v8_data') || '[]'));
+                const fileInput = ref(null);
 
                 const columns = [
                     { id: 'applied', name: 'Applied' },
@@ -224,8 +193,7 @@
 
                 const daysLeft = computed(() => {
                     const target = new Date(targetDate.value + 'T00:00:00');
-                    const now = new Date();
-                    const diff = target - now;
+                    const diff = target - new Date();
                     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
                 });
 
@@ -236,7 +204,6 @@
                         const d = new Date();
                         d.setDate(d.getDate() - i);
                         const ds = d.toISOString().split('T')[0];
-                        // 修复日历统计逻辑：抓取 jobs 中日期匹配的所有条目
                         const count = jobs.value.filter(j => j.date === ds).length;
                         days.push({ date: ds, weekday: weekdays[d.getDay()], count });
                     }
@@ -249,6 +216,7 @@
                     return jobs.value.filter(j => j.company.toLowerCase().includes(q) || j.role.toLowerCase().includes(q));
                 });
 
+                const form = ref({ company: '', role: '', jd: '', location: '', salary: '', date: new Date().toISOString().split('T')[0], referral: false });
                 const addJob = () => {
                     if(!form.value.company) return;
                     jobs.value.push({ id: Date.now(), ...form.value, status: 'applied' });
@@ -263,16 +231,35 @@
                     editingJob.value = null;
                 };
                 const deleteJob = () => {
-                    if(confirm('Wipe this record?')) {
-                        jobs.value = jobs.value.filter(j => j.id !== editingJob.value.id);
-                        editingJob.value = null;
-                    }
+                    if(confirm('确定删除？')) { jobs.value = jobs.value.filter(j => j.id !== editingJob.value.id); editingJob.value = null; }
                 };
 
-                watch(targetDate, (v) => localStorage.setItem('target_date_v7', v));
-                watch(jobs, (v) => localStorage.setItem('job_v7_data', JSON.stringify(v)), { deep: true });
+                // 备份与同步逻辑
+                const exportData = () => {
+                    const blob = new Blob([JSON.stringify(jobs.value)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Job_Backup_${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                };
+                const triggerImport = () => fileInput.value.click();
+                const importData = (e) => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        try {
+                            const imported = JSON.parse(ev.target.result);
+                            if(confirm('确认导入？这会覆盖当前电脑上的数据。')) { jobs.value = imported; alert('同步成功！'); }
+                        } catch { alert('文件无效'); }
+                    };
+                    reader.readAsText(file);
+                };
 
-                return { view, searchQuery, searchOpen, editingJob, targetDate, daysLeft, form, jobs, columns, searchResults, last28Days, addJob, getList, openEdit, saveEdit, deleteJob };
+                watch(targetDate, (v) => localStorage.setItem('target_date_v8', v));
+                watch(jobs, (v) => localStorage.setItem('job_v8_data', JSON.stringify(v)), { deep: true });
+
+                return { view, searchQuery, searchOpen, editingJob, targetDate, daysLeft, form, jobs, columns, searchResults, last28Days, addJob, getList, openEdit, saveEdit, deleteJob, exportData, triggerImport, importData, fileInput };
             }
         }).mount('#app');
     </script>
