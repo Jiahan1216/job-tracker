@@ -6,6 +6,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
+        [v-cloak] { display: none; }
         body { background: #f8fafc; color: #1e293b; font-family: -apple-system, sans-serif; }
         .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
         .kanban-col { min-height: 70vh; width: 330px; flex-shrink: 0; }
@@ -18,35 +19,36 @@
     </style>
 </head>
 <body class="p-6 md:p-10">
-    <div id="app" class="max-w-[1600px] mx-auto">
+    <div id="app" class="max-w-[1600px] mx-auto" v-cloak>
         <div class="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
             <div class="space-y-3">
-                <h1 class="text-4xl font-black tracking-tighter text-slate-900">🚀 2026 Job Mission</h1>
+                <h1 class="text-4xl font-black tracking-tighter text-slate-900">🚀 {{ t('title') }}</h1>
                 <div class="flex flex-wrap items-center gap-4">
                     <div class="flex items-center gap-2 text-slate-500 font-bold text-xs uppercase tracking-widest">
-                        <span>Target Start:</span>
+                        <span>{{ t('targetStart') }}:</span>
                         <input type="date" v-model="targetDate" class="bg-white border border-slate-200 rounded-lg px-2 py-1 focus:ring-2 ring-indigo-100 outline-none font-black text-indigo-600 cursor-pointer">
                     </div>
                     <div class="countdown-tag text-sm">
-                        距离入职还有 <span class="text-indigo-600 mx-1">{{ daysLeft }}</span> 天
+                        {{ t('daysLeft1') }} <span class="text-indigo-600 mx-1">{{ daysLeft }}</span> {{ t('daysLeft2') }}
                     </div>
                     <div class="flex gap-2">
-                        <button @click="exportData" class="text-[10px] font-black border border-slate-200 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 transition uppercase tracking-tighter">💾 导出备份</button>
-                        <button @click="triggerImport" class="text-[10px] font-black border border-slate-200 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 transition uppercase tracking-tighter">📥 导入同步</button>
+                        <button @click="exportData" class="text-[10px] font-black border border-slate-200 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 transition uppercase tracking-tighter">💾 {{ t('export') }}</button>
+                        <button @click="triggerImport" class="text-[10px] font-black border border-slate-200 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 transition uppercase tracking-tighter">📥 {{ t('import') }}</button>
+                        <button @click="toggleLang" class="text-[10px] font-black border border-indigo-200 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition uppercase tracking-tighter">🌐 {{ lang === 'zh' ? 'English' : '中文' }}</button>
                         <input type="file" ref="fileInput" @change="importData" class="hidden">
                     </div>
                 </div>
             </div>
             
             <div class="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-200">
-                <button @click="view = 'kanban'" :class="view==='kanban' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500'" class="px-8 py-2.5 rounded-xl font-bold transition-all">看板模式</button>
-                <button @click="view = 'calendar'" :class="view==='calendar' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500'" class="px-8 py-2.5 rounded-xl font-bold transition-all">日历热力</button>
+                <button @click="view = 'kanban'" :class="view==='kanban' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500'" class="px-8 py-2.5 rounded-xl font-bold transition-all">{{ t('kanbanMode') }}</button>
+                <button @click="view = 'calendar'" :class="view==='calendar' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500'" class="px-8 py-2.5 rounded-xl font-bold transition-all">{{ t('calendarMode') }}</button>
             </div>
         </div>
 
         <div class="max-w-2xl mx-auto mb-10 relative">
             <input v-model="searchQuery" @focus="searchOpen = true" 
-                   placeholder="快速定位公司、岗位或地点..." 
+                   :placeholder="t('searchPlaceholder')" 
                    class="w-full bg-white shadow-xl p-4 pl-12 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-500 transition-all text-lg font-medium">
             <span class="absolute left-4 top-4 opacity-30 text-xl">🔍</span>
             
@@ -57,7 +59,7 @@
                         <div class="font-black text-slate-800">{{ res.company }} <span v-if="res.referral" class="ml-2 text-[9px] bg-emerald-100 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">Ref</span></div>
                         <div class="text-xs text-indigo-500 font-bold">{{ res.role }}</div>
                     </div>
-                    <span class="text-[10px] font-black bg-slate-100 px-3 py-1 rounded-full text-slate-500 uppercase">{{ res.status }}</span>
+                    <span class="text-[10px] font-black bg-slate-100 px-3 py-1 rounded-full text-slate-500 uppercase">{{ t(res.status) }}</span>
                 </div>
             </div>
         </div>
@@ -65,41 +67,41 @@
         <section v-if="view === 'kanban'" class="glass-card p-6 mb-12">
             <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                 <div class="flex flex-col gap-1">
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Company</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">{{ t('company') }}</label>
                     <input v-model="form.company" placeholder="e.g. Amazon" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none focus:bg-white focus:ring-2 ring-indigo-50">
                 </div>
                 <div class="flex flex-col gap-1">
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Role</label>
-                    <input v-model="form.role" placeholder="e.g. MSBA" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">{{ t('role') }}</label>
+                    <input v-model="form.role" placeholder="e.g. Business Analyst" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
                 </div>
                 <div class="flex flex-col gap-1">
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">JD Link</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">{{ t('jd') }}</label>
                     <input v-model="form.jd" placeholder="https://..." class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
                 </div>
                 <div class="flex flex-col gap-1">
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Location</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">{{ t('location') }}</label>
                     <input v-model="form.location" placeholder="Seattle" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
                 </div>
                 <div class="flex flex-col gap-1">
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Salary</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">{{ t('salary') }}</label>
                     <input v-model="form.salary" placeholder="e.g. 150k" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
                 </div>
                 <div class="flex flex-col gap-1">
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Date</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">{{ t('date') }}</label>
                     <input v-model="form.date" type="date" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
                 </div>
                 <div class="flex flex-col justify-end gap-2">
                     <label class="flex items-center gap-2 cursor-pointer mb-1 ml-1">
                         <input type="checkbox" v-model="form.referral" class="w-4 h-4 rounded text-indigo-600">
-                        <span class="text-xs font-bold text-slate-600">内推渠道</span>
+                        <span class="text-xs font-bold text-slate-600">{{ t('referral') }}</span>
                     </label>
-                    <button @click="addJob" class="bg-indigo-600 text-white p-3 rounded-xl font-black hover:bg-indigo-700 shadow-lg active:scale-95 transition-all">确认投递</button>
+                    <button @click="addJob" class="bg-indigo-600 text-white p-3 rounded-xl font-black hover:bg-indigo-700 shadow-lg active:scale-95 transition-all">{{ t('confirm') }}</button>
                 </div>
             </div>
         </section>
 
         <div v-show="view === 'calendar'" class="glass-card p-10 min-h-[500px]">
-            <h2 class="text-xl font-black mb-10 text-slate-800">📊 每日申请强度 (最近28天)</h2>
+            <h2 class="text-xl font-black mb-10 text-slate-800">📊 {{ t('heatTitle') }}</h2>
             <div class="grid grid-cols-7 gap-4">
                 <div v-for="day in last28Days" :key="day.date" class="text-center">
                     <div class="text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-tighter">{{ day.weekday }} {{ day.date.slice(5) }}</div>
@@ -107,7 +109,7 @@
                          :class="day.count > 0 ? 'border-2 border-indigo-400 shadow-md shadow-indigo-100' : 'border border-slate-100'"
                          class="heat-box">
                         <span v-if="day.count > 0" class="font-black text-indigo-700 text-xl">{{ day.count }}</span>
-                        <div class="tooltip">投递了 {{ day.count }} 个岗位</div>
+                        <div class="tooltip">{{ t('appliedMsg') }} {{ day.count }} {{ t('appliedUnit') }}</div>
                     </div>
                 </div>
             </div>
@@ -116,7 +118,7 @@
         <div v-show="view === 'kanban'" class="flex gap-6 overflow-x-auto pb-10">
             <div v-for="col in columns" :key="col.id" class="kanban-col">
                 <div class="flex justify-between items-center mb-6 px-4">
-                    <h3 class="font-black text-xs uppercase tracking-widest text-slate-400">{{ col.name }}</h3>
+                    <h3 class="font-black text-xs uppercase tracking-widest text-slate-400">{{ t(col.id) }}</h3>
                     <span class="bg-white px-3 py-0.5 rounded-full text-[10px] font-black shadow-sm text-indigo-600 border border-indigo-50">{{ getList(col.id).length }}</span>
                 </div>
 
@@ -137,35 +139,35 @@
         <div v-if="editingJob" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
             <div class="bg-white p-8 rounded-[2rem] w-full max-w-xl shadow-2xl border border-slate-100 animate-in zoom-in-95">
                 <div class="flex justify-between items-center mb-8">
-                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">修改投递详情</h2>
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">{{ t('editTitle') }}</h2>
                     <button @click="editingJob = null" class="text-slate-300 hover:text-slate-600 text-3xl transition">&times;</button>
                 </div>
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
-                        <input v-model="editingJob.company" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" placeholder="公司">
-                        <input v-model="editingJob.role" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" placeholder="岗位">
+                        <input v-model="editingJob.company" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" :placeholder="t('company')">
+                        <input v-model="editingJob.role" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" :placeholder="t('role')">
                     </div>
                     <select v-model="editingJob.status" class="w-full bg-indigo-50 p-4 rounded-xl text-indigo-700 font-black border-none outline-none">
-                        <option value="applied">Applied</option>
-                        <option value="interview">Interviewing</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="offer">Offer Secured</option>
+                        <option value="applied">{{ t('applied') }}</option>
+                        <option value="interview">{{ t('interview') }}</option>
+                        <option value="rejected">{{ t('rejected') }}</option>
+                        <option value="offer">{{ t('offer') }}</option>
                     </select>
                     <div class="grid grid-cols-2 gap-4">
-                        <input v-model="editingJob.location" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" placeholder="地点">
-                        <input v-model="editingJob.salary" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" placeholder="薪资">
+                        <input v-model="editingJob.location" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" :placeholder="t('location')">
+                        <input v-model="editingJob.salary" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" :placeholder="t('salary')">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <input v-model="editingJob.date" type="date" class="bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none">
                         <label class="flex items-center gap-2 cursor-pointer ml-2">
                             <input type="checkbox" v-model="editingJob.referral">
-                            <span class="text-xs font-bold text-slate-600">内推</span>
+                            <span class="text-xs font-bold text-slate-600">{{ t('referral') }}</span>
                         </label>
                     </div>
-                    <input v-model="editingJob.jd" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" placeholder="JD 链接">
+                    <input v-model="editingJob.jd" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none" :placeholder="t('jd')">
                     <div class="flex gap-4 pt-6">
-                        <button @click="saveEdit" class="flex-1 bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">保存</button>
-                        <button @click="deleteJob" class="bg-rose-50 text-rose-500 px-6 rounded-2xl font-bold">删除</button>
+                        <button @click="saveEdit" class="flex-1 bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">{{ t('save') }}</button>
+                        <button @click="deleteJob" class="bg-rose-50 text-rose-500 px-6 rounded-2xl font-bold">{{ t('delete') }}</button>
                     </div>
                 </div>
             </div>
@@ -174,8 +176,33 @@
 
     <script>
         const { createApp, ref, computed, watch } = Vue;
+        
+        const i18n = {
+            zh: {
+                title: '2026 Job Mission', targetStart: '目标入职', daysLeft1: '距离入职还有', daysLeft2: '天',
+                export: '导出备份', import: '导入同步', kanbanMode: '看板模式', calendarMode: '日历热力',
+                searchPlaceholder: '快速定位公司、岗位或地点...', company: '公司', role: '岗位', jd: 'JD 链接',
+                location: '地点', salary: '薪资', date: '日期', referral: '内推渠道', confirm: '确认投递',
+                heatTitle: '每日申请强度 (最近28天)', appliedMsg: '投递了', appliedUnit: '个岗位',
+                editTitle: '修改投递详情', save: '保存', delete: '删除',
+                applied: '已申请', interview: '面试中', rejected: '已拒绝', offer: '已录用',
+                confirmDel: '确定删除？', confirmImport: '确认导入？这会覆盖当前电脑上的数据。', syncSuccess: '同步成功！', fileError: '文件无效'
+            },
+            en: {
+                title: '2026 Job Mission', targetStart: 'Target Start', daysLeft1: 'Countdown:', daysLeft2: 'Days Left',
+                export: 'Export', import: 'Import', kanbanMode: 'Kanban', calendarMode: 'Heatmap',
+                searchPlaceholder: 'Search company, role or location...', company: 'Company', role: 'Role', jd: 'JD Link',
+                location: 'Location', salary: 'Salary', date: 'Date', referral: 'Referral', confirm: 'Submit',
+                heatTitle: 'Daily Applications (Last 28 Days)', appliedMsg: 'Applied', appliedUnit: 'positions',
+                editTitle: 'Edit Application', save: 'Save', delete: 'Delete',
+                applied: 'Applied', interview: 'Interviewing', rejected: 'Rejected', offer: 'Offer Secured',
+                confirmDel: 'Are you sure?', confirmImport: 'Confirm import? This will overwrite existing data.', syncSuccess: 'Sync successful!', fileError: 'Invalid file'
+            }
+        };
+
         createApp({
             setup() {
+                const lang = ref(localStorage.getItem('job_v8_lang') || 'zh');
                 const view = ref('kanban');
                 const searchQuery = ref('');
                 const searchOpen = ref(false);
@@ -184,11 +211,14 @@
                 const jobs = ref(JSON.parse(localStorage.getItem('job_v8_data') || '[]'));
                 const fileInput = ref(null);
 
+                const t = (key) => i18n[lang.value][key] || key;
+                const toggleLang = () => { lang.value = lang.value === 'zh' ? 'en' : 'zh'; };
+
                 const columns = [
-                    { id: 'applied', name: 'Applied' },
-                    { id: 'interview', name: 'Interviewing' },
-                    { id: 'rejected', name: 'Rejected' },
-                    { id: 'offer', name: 'Offer Secured' }
+                    { id: 'applied' },
+                    { id: 'interview' },
+                    { id: 'rejected' },
+                    { id: 'offer' }
                 ];
 
                 const daysLeft = computed(() => {
@@ -199,7 +229,10 @@
 
                 const last28Days = computed(() => {
                     const days = [];
-                    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    const zhDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+                    const enDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    const weekdays = lang.value === 'zh' ? zhDays : enDays;
+                    
                     for(let i=27; i>=0; i--) {
                         const d = new Date();
                         d.setDate(d.getDate() - i);
@@ -231,10 +264,9 @@
                     editingJob.value = null;
                 };
                 const deleteJob = () => {
-                    if(confirm('确定删除？')) { jobs.value = jobs.value.filter(j => j.id !== editingJob.value.id); editingJob.value = null; }
+                    if(confirm(t('confirmDel'))) { jobs.value = jobs.value.filter(j => j.id !== editingJob.value.id); editingJob.value = null; }
                 };
 
-                // 备份与同步逻辑
                 const exportData = () => {
                     const blob = new Blob([JSON.stringify(jobs.value)], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
@@ -250,16 +282,17 @@
                     reader.onload = (ev) => {
                         try {
                             const imported = JSON.parse(ev.target.result);
-                            if(confirm('确认导入？这会覆盖当前电脑上的数据。')) { jobs.value = imported; alert('同步成功！'); }
-                        } catch { alert('文件无效'); }
+                            if(confirm(t('confirmImport'))) { jobs.value = imported; alert(t('syncSuccess')); }
+                        } catch { alert(t('fileError')); }
                     };
                     reader.readAsText(file);
                 };
 
+                watch(lang, (v) => localStorage.setItem('job_v8_lang', v));
                 watch(targetDate, (v) => localStorage.setItem('target_date_v8', v));
                 watch(jobs, (v) => localStorage.setItem('job_v8_data', JSON.stringify(v)), { deep: true });
 
-                return { view, searchQuery, searchOpen, editingJob, targetDate, daysLeft, form, jobs, columns, searchResults, last28Days, addJob, getList, openEdit, saveEdit, deleteJob, exportData, triggerImport, importData, fileInput };
+                return { lang, t, toggleLang, view, searchQuery, searchOpen, editingJob, targetDate, daysLeft, form, jobs, columns, searchResults, last28Days, addJob, getList, openEdit, saveEdit, deleteJob, exportData, triggerImport, importData, fileInput };
             }
         }).mount('#app');
     </script>
